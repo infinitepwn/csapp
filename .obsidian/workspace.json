@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "virtual_memory.md",
+                "file": "虚拟内存/virtual_memory.md",
                 "mode": "source",
                 "source": false
               },
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "virtual_memory.md",
+                "file": "虚拟内存/virtual_memory.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -113,7 +113,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "virtual_memory.md",
+                "file": "虚拟内存/virtual_memory.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -156,7 +156,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "virtual_memory.md",
+                "file": "虚拟内存/virtual_memory.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -196,9 +196,12 @@
   },
   "active": "07f10549bad36486",
   "lastOpenFiles": [
-    "Computer Systems A Programmers Perspective (3rd).pdf",
-    "深入理解计算机系统（中文清晰）.pdf",
-    "virtual_memory.md",
+    "虚拟内存",
+    "课本/深入理解计算机系统（中文清晰）.pdf",
+    "README.md",
+    "课本",
+    "虚拟内存/virtual_memory.md",
+    "课本/Computer Systems A Programmers Perspective (3rd).pdf",
     "26-parallelism笔记.md"
   ]
 }
