@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第26讲：线程级并行（Thread-Level Parallelism）</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #22263a;
+      --border: #2e3350;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --yellow: #f5c842;
+      --red: #e85d75;
+      --text: #e2e6f3;
+      --text-muted: #8892b0;
+      --code-bg: #161b2e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    /* ── 顶部 Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1f3c 0%, #0d1b40 60%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 40px 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(91,141,238,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(91,141,238,0.15);
+      border: 1px solid rgba(91,141,238,0.4);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero-meta {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ── 目录 ── */
+    .toc {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 32px 40px;
+    }
+    .toc-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin: 5px 0; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 14px; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── 正文 ── */
+    .content { padding: 0 40px 60px; max-width: 960px; }
+
+    .section {
+      margin-top: 48px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 24px 0 10px;
+    }
+
+    p { margin: 10px 0; color: var(--text); }
+
+    ul, ol { padding-left: 22px; margin: 10px 0; }
+    li { margin: 5px 0; }
+    li strong { color: var(--yellow); }
+
+    /* ── 代码 ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 14px 0;
+      position: relative;
+    }
+    pre .lang-tag {
+      position: absolute;
+      top: 8px; right: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: monospace;
+      letter-spacing: .06em;
+    }
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #cdd9f5;
+    }
+    p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 13px;
+      color: var(--green);
+    }
+
+    /* 语法高亮（极简） */
+    .kw { color: #c792ea; }
+    .ty { color: #82aaff; }
+    .cm { color: #546e7a; font-style: italic; }
+    .num { color: #f78c6c; }
+    .fn { color: #82aaff; }
+    .str { color: #c3e88d; }
+
+    /* ── 表格 ── */
+    .table-wrap { overflow-x: auto; margin: 14px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead tr { background: var(--bg3); }
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:hover { background: rgba(91,141,238,0.05); }
+    td strong { color: var(--yellow); }
+
+    /* ── 提示块 ── */
+    .callout {
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body { flex: 1; font-size: 14px; }
+    .callout.warn {
+      background: rgba(245,200,66,0.08);
+      border-left: 3px solid var(--yellow);
+    }
+    .callout.info {
+      background: rgba(91,141,238,0.08);
+      border-left: 3px solid var(--accent);
+    }
+    .callout.danger {
+      background: rgba(232,93,117,0.08);
+      border-left: 3px solid var(--red);
+    }
+    .callout.success {
+      background: rgba(62,207,142,0.08);
+      border-left: 3px solid var(--green);
+    }
+
+    /* ── 架构图 ── */
+    .arch-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 14px 0;
+      overflow-x: auto;
+    }
+    .arch-diagram pre {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-size: 13px;
+      color: #8dc4ff;
+    }
+
+    /* ── 状态卡片 ── */
+    .state-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .state-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .state-card .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      letter-spacing: .06em;
+    }
+    .badge-invalid { background: rgba(232,93,117,0.2); color: var(--red); }
+    .badge-shared  { background: rgba(91,141,238,0.2); color: var(--accent); }
+    .badge-exclusive { background: rgba(62,207,142,0.2); color: var(--green); }
+    .state-card p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+    /* ── 分隔线 ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* ── 页脚 ── */
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 24px 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 640px) {
+      .hero, .toc, .content { padding-left: 20px; padding-right: 20px; }
+      .toc { margin: 20px; }
+      .state-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">CS:APP · 15-213 · Lecture 26</div>
+  <h1>第26讲：<span>线程级并行</span><br>Thread-Level Parallelism</h1>
+  <div class="hero-meta">Randal E. Bryant &amp; David R. O'Hallaron &nbsp;·&nbsp; CMU · Dec. 1, 2015 &nbsp;·&nbsp; 笔记整理</div>
+</div>
+
+<!-- 目录 -->
+<div class="toc">
+  <div class="toc-title">目录</div>
+  <ol>
+    <li><a href="#s1">本讲概览</a></li>
+    <li><a href="#s2">并行执行的动机</a></li>
+    <li><a href="#s3">硬件基础（多核 / 超线程）</a></li>
+    <li><a href="#s4">示例1：并行求和</a></li>
+    <li><a href="#s5">示例2：并行快速排序</a></li>
+    <li><a href="#s6">经验总结与教训</a></li>
+    <li><a href="#s7">内存一致性</a></li>
+    <li><a href="#s8">关键术语速查</a></li>
+  </ol>
+</div>
+
+<div class="content">
+
+<!-- ① 概览 -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-num">一</div>
+    <h2>本讲概览</h2>
+  </div>
+  <ul>
+    <li><strong>并行计算硬件</strong>
+      <ul>
+        <li><strong>多核（Multicore）</strong>：单芯片上多个独立处理器</li>
+        <li><strong>超线程（Hyperthreading）</strong>：单核高效执行多线程</li>
+      </ul>
+    </li>
+    <li><strong>线程级并行</strong>
+      <ul>
+        <li>将程序划分为独立任务</li>
+        <li>示例1：并行求和</li>
+        <li>示例2：并行快速排序（分治并行）</li>
+      </ul>
+    </li>
+    <li><strong>一致性模型</strong>：多线程读写共享状态时会发生什么</li>
+  </ul>
+</div>
+
+<!-- ② 动机 -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-num">二</div>
+    <h2>并行执行的动机</h2>
+  </div>
+  <ul>
+    <li>之前用线程处理 <strong>I/O 延迟</strong>（如每个客户端一个线程，防止互相阻塞）</li>
+    <li>多核/超线程 CPU 提供了新机会：
+      <ul>
+        <li>将工作分散到并行执行的线程上</li>
+        <li>多个独立任务时自动并行（如运行多个程序、服务多个客户端）</li>
+        <li>也可以将<strong>一个大任务</strong>组织成多个并行子任务，从而加速</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<!-- ③ 硬件 -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-num">三</div>
+    <h2>硬件基础</h2>
+  </div>
+
+  <h3>3.1 典型多核处理器结构</h3>
+  <div class="arch-diagram">
+    <pre>
+ Core 0                     Core n-1
+┌──────────────────┐        ┌──────────────────┐
+│  Regs            │  ...   │  Regs            │
+│  L1 d-cache      │        │  L1 d-cache      │
+│  L1 i-cache      │        │  L1 i-cache      │
+│  L2 unified cache│        │  L2 unified cache│
+└──────────────────┘        └──────────────────┘
+         ┌──────────────────────────────┐
+         │   L3 unified cache（共享）    │
+         └──────────────────────────────┘
+                     Main Memory
+    </pre>
+  </div>
+  <p>多个处理器对内存有<strong>一致的视图</strong>（Coherent view of memory）。</p>
+
+  <h3>3.2 乱序执行（Out-of-Order）处理器</h3>
+  <ul>
+    <li>指令控制单元动态地将程序转换为操作流</li>
+    <li>操作映射到多个功能单元（FU）上<strong>并行执行</strong>：整数算术单元（×2）、浮点单元、Load/Store 单元</li>
+  </ul>
+
+  <h3>3.3 超线程实现（Hyperthreading）</h3>
+  <ul>
+    <li>复制足够的指令控制来处理 <strong>K 个指令流</strong></li>
+    <li><strong>K 份寄存器拷贝</strong>（每个线程独立的 PC、寄存器堆、操作队列）</li>
+    <li><strong>共享功能单元</strong></li>
+    <li>原理：当一个线程等待（如 cache miss）时，另一个线程利用空闲的功能单元</li>
+  </ul>
+
+  <h3>3.4 基准测试机器</h3>
+  <ul>
+    <li>Intel Xeon E5520 @ 2.27 GHz（Nehalem 架构，约2010年）</li>
+    <li><strong>8个核</strong>，每核支持 <strong>2× 超线程</strong></li>
+    <li>信息来源：<code>/proc/cpuinfo</code></li>
+  </ul>
+</div>
+
+<!-- ④ 并行求和 -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-num">四</div>
+    <h2>示例1：并行求和</h2>
+  </div>
+  <p><strong>任务</strong>：求 0 到 n-1 的总和（结果应为 <code>(n-1)*n/2</code>）</p>
+  <p><strong>策略</strong>：将值域 <code>[1, n-1]</code> 分成 <code>t</code> 个范围，每个线程处理一个范围（假设 n 是 t 的倍数）。</p>
+
+  <h3>4.1 方法一：全局变量（有竞态问题）</h3>
+  <pre><span class="lang-tag">C</span><code><span class="cm">/* 错误示范：直接累加全局变量 */</span>
+<span class="ty">void</span> *<span class="fn">sum_global</span>(<span class="ty">void</span> *vargp) {
+    <span class="cm">// ... 直接累加到全局变量 global_sum</span>
+    <span class="cm">// ❌ 问题：存在竞态条件（race condition），结果不可预期</span>
+}</code></pre>
+
+  <div class="callout danger">
+    <div class="callout-icon">⚠️</div>
+    <div class="callout-body"><strong>多线程同时写全局变量</strong>，无互斥保护时会发生竞态，结果不正确且不可复现。</div>
+  </div>
+
+  <h3>4.2 方法二：局部变量 + 全局数组（正确）</h3>
+  <pre><span class="lang-tag">C</span><code><span class="cm">/* 每个线程先算局部和，再写入全局数组各自的槽 */</span>
+<span class="ty">void</span> *<span class="fn">sum_local</span>(<span class="ty">void</span> *vargp) {
+    <span class="ty">long</span> myid  = ((<span class="ty">arg_t</span> *)vargp)->id;
+    <span class="ty">long</span> start = myid * (n / nthreads);
+    <span class="ty">long</span> end   = start + n / nthreads;
+    <span class="ty">long</span> sum   = <span class="num">0</span>;
+    <span class="kw">for</span> (<span class="ty">long</span> i = start; i &lt; end; i++)
+        sum += i;
+    gsum[myid] = sum;  <span class="cm">// ✅ 每个线程只写各自的槽</span>
+    <span class="kw">return</span> NULL;
+}</code></pre>
+  <p>主线程最后汇总 <code>gsum[]</code> 中各线程的局部和。</p>
+
+  <h3>4.3 性能分析：Amdahl's Law</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>线程数</th><th>理想加速比</th><th>实际加速比</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>1×</td><td>~1×</td></tr>
+        <tr><td>2</td><td>2×</td><td>~1.99×</td></tr>
+        <tr><td>4</td><td>4×</td><td>~3.91×</td></tr>
+        <tr><td>8</td><td>8×</td><td>~7.08×</td></tr>
+        <tr><td>16</td><td>16×</td><td>~13.2×</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">超过物理核数（>8）后，加速比增长放缓，受超线程效率和串行部分的限制。</div>
+  </div>
+
+  <h3>4.4 伪共享（False Sharing）</h3>
+  <p>即使每个线程写<strong>不同的数组元素</strong>，若这些元素在<strong>同一 cache line</strong> 内，写一个槽会使其他核缓存中同一 cache line 失效（invalidate），引发不必要的缓存同步，严重降低性能。</p>
+  <p><strong>解决方案</strong>：对数组元素加 padding，保证每个线程的数据落在不同的 cache line 上。</p>
+  <pre><span class="lang-tag">C</span><code><span class="cm">// 每个槽 padding 到 64 字节（一个 cache line）</span>
+<span class="kw">typedef struct</span> {
+    <span class="ty">long</span> val;
+    <span class="ty">long</span> pad[<span class="num">7</span>];  <span class="cm">// 7 × 8 + 8 = 64 字节</span>
+} <span class="ty">padded_t</span>;
+<span class="ty">padded_t</span> gsum[MAXTHREADS];</code></pre>
+</div>
+
+<!-- ⑤ 并行快排 -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-num">五</div>
+    <h2>示例2：并行快速排序</h2>
+  </div>
+
+  <h3>5.1 顺序快速排序</h3>
+  <pre><span class="lang-tag">C</span><code><span class="ty">void</span> <span class="fn">qsort_serial</span>(<span class="ty">data_t</span> *base, <span class="ty">size_t</span> nele) {
+    <span class="kw">if</span> (nele &lt;= <span class="num">1</span>) <span class="kw">return</span>;
+    <span class="kw">if</span> (nele == <span class="num">2</span>) {
+        <span class="kw">if</span> (base[<span class="num">0</span>] &gt; base[<span class="num">1</span>]) <span class="fn">swap</span>(base, base+<span class="num">1</span>);
+        <span class="kw">return</span>;
+    }
+    <span class="ty">size_t</span> m = <span class="fn">partition</span>(base, nele);  <span class="cm">// 返回枢轴索引</span>
+    <span class="kw">if</span> (m &gt; <span class="num">1</span>)        <span class="fn">qsort_serial</span>(base, m);
+    <span class="kw">if</span> (nele-<span class="num">1</span> &gt; m+<span class="num">1</span>) <span class="fn">qsort_serial</span>(base+m+<span class="num">1</span>, nele-m-<span class="num">1</span>);
+}</code></pre>
+  <p>过程：选择枢轴 p → 重排为 L（≤p）、p、R（≥p）→ 递归排序 L 和 R → 返回 L : p : R</p>
+
+  <h3>5.2 并行快速排序思路</h3>
+  <ul>
+    <li>若子数组大小 N ≤ <code>Nthresh</code>，退化为<strong>顺序快速排序</strong></li>
+    <li>否则：选枢轴 → 划分 L / R → <strong>递归地 spawn 独立线程</strong>分别排序 → 合并</li>
+  </ul>
+
+  <h3>5.3 顶层函数（简化）</h3>
+  <pre><span class="lang-tag">C</span><code><span class="ty">void</span> <span class="fn">tqsort</span>(<span class="ty">data_t</span> *base, <span class="ty">size_t</span> nele) {
+    <span class="fn">init_task</span>(nele);
+    global_base = base;
+    global_end  = global_base + nele - <span class="num">1</span>;
+    <span class="ty">task_queue_ptr</span> tq = <span class="fn">new_task_queue</span>();
+    <span class="fn">tqsort_helper</span>(base, nele, tq);
+    <span class="fn">join_tasks</span>(tq);        <span class="cm">// 等待所有子线程完成</span>
+    <span class="fn">free_task_queue</span>(tq);
+}</code></pre>
+
+  <h3>5.4 递归排序函数（简化）</h3>
+  <pre><span class="lang-tag">C</span><code><span class="kw">static</span> <span class="ty">void</span> <span class="fn">tqsort_helper</span>(<span class="ty">data_t</span> *base, <span class="ty">size_t</span> nele,
+                           <span class="ty">task_queue_ptr</span> tq) {
+    <span class="kw">if</span> (nele &lt;= nele_max_sort_serial) {
+        <span class="fn">qsort_serial</span>(base, nele);  <span class="cm">// 小数组用顺序排序</span>
+        <span class="kw">return</span>;
+    }
+    <span class="ty">size_t</span> m = <span class="fn">partition</span>(base, nele);
+    <span class="fn">spawn_task</span>(tq, tqsort_helper, base,     m,          tq);
+    <span class="fn">spawn_task</span>(tq, tqsort_helper, base+m+<span class="num">1</span>, nele-m-<span class="num">1</span>, tq);
+}</code></pre>
+
+  <h3>5.5 并行划分（Parallel Partitioning）的尝试</h3>
+  <div class="callout danger">
+    <div class="callout-icon">❌</div>
+    <div class="callout-body">
+      <strong>实验结论</strong>：并行化 partition 步骤<strong>无法获得加速比</strong>。<br>
+      <strong>推测原因</strong>：数据拷贝开销过大——需要临时空间重新组装划分结果，无法在原地完成。
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 经验总结 -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-num">六</div>
+    <h2>经验总结与教训</h2>
+  </div>
+  <ol>
+    <li><strong>必须有并行化策略</strong>：将问题分成 K 个独立部分（分区法）或使用分治（divide-and-conquer）</li>
+    <li><strong>内层循环必须无同步</strong>：同步操作（锁、原子操作等）代价极高，会严重拖慢性能</li>
+    <li><strong>注意 Amdahl's Law</strong>：串行代码会成为瓶颈，极小比例的串行部分也能严重限制加速比上限
+      <div class="callout info" style="margin-top:10px">
+        <div class="callout-icon">📐</div>
+        <div class="callout-body"><strong>Amdahl's Law 公式</strong>：&nbsp; S = 1 / (s + (1-s)/p) &nbsp;，其中 s 为串行比例，p 为处理器数量</div>
+      </div>
+    </li>
+    <li><strong>实践是可行的</strong>：实现适度并行加速并不难，搭建实验框架，测试多种策略。</li>
+  </ol>
+</div>
+
+<!-- ⑦ 内存一致性 -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-num">七</div>
+    <h2>内存一致性（Memory Consistency）</h2>
+  </div>
+
+  <h3>7.1 问题引入</h3>
+  <pre><span class="lang-tag">C</span><code><span class="ty">int</span> a = <span class="num">1</span>, b = <span class="num">100</span>;
+
+<span class="cm">// Thread 1:               // Thread 2:</span>
+a = <span class="num">2</span>;       <span class="cm">/* Wa */</span>    b = <span class="num">200</span>;     <span class="cm">/* Wb */</span>
+<span class="fn">print</span>(b);    <span class="cm">/* Rb */</span>    <span class="fn">print</span>(a);    <span class="cm">/* Ra */</span></code></pre>
+  <p>可能的输出值是什么？—— 这取决于<strong>内存一致性模型</strong>（Abstract model of how hardware handles concurrent accesses）。</p>
+
+  <h3>7.2 顺序一致性（Sequential Consistency）</h3>
+  <p>整体执行效果与某种<strong>所有线程操作的顺序交织（interleaving）</strong>一致，且每个线程内的操作顺序保持不变。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>执行顺序</th><th>Thread1 输出（Rb）</th><th>Thread2 输出（Ra）</th></tr></thead>
+      <tbody>
+        <tr><td>Wa→Rb→Wb→Ra</td><td>100</td><td>2</td></tr>
+        <tr><td>Wa→Wb→Rb→Ra</td><td>200</td><td>2</td></tr>
+        <tr><td>Wb→Ra→Wa→Rb</td><td>1</td><td>200</td></tr>
+        <tr><td>Wb→Wa→Ra→Rb</td><td>2</td><td>200</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div class="callout-body"><strong>不可能的输出</strong>：<code>100, 1</code> 或 <code>1, 100</code>——这需要在 Wa 和 Wb 都执行前就读到 Ra 和 Rb，违反线程内顺序约束。</div>
+  </div>
+
+  <h3>7.3 非一致缓存场景（Non-Coherent Cache）</h3>
+  <ul>
+    <li>写回缓存（write-back cache）但<strong>缓存之间没有协调</strong></li>
+    <li>结果：Thread1 的 <code>a=2</code> 存在 Thread1 的缓存中，但 Thread2 读 <code>a</code> 时仍从主存读到 <code>a=1</code></li>
+    <li>这会导致 <code>print(a)=1, print(b)=100</code> 这种<strong>在顺序一致性下不可能出现的结果</strong></li>
+  </ul>
+
+  <h3>7.4 Snoopy 缓存（缓存一致性协议）</h3>
+  <p>每个缓存块打上状态标签（MSI 协议）：</p>
+  <div class="state-cards">
+    <div class="state-card">
+      <div><span class="badge badge-invalid">Invalid</span></div>
+      <p>不可使用该值（已失效），需要从其他缓存或主存重新获取</p>
+    </div>
+    <div class="state-card">
+      <div><span class="badge badge-shared">Shared</span></div>
+      <p>可读的拷贝，可能多个缓存共同持有，但不能直接写</p>
+    </div>
+    <div class="state-card">
+      <div><span class="badge badge-exclusive">Exclusive</span></div>
+      <p>可写的拷贝，只有一个缓存持有，值最新</p>
+    </div>
+  </div>
+  <p><strong>工作机制</strong>：当某缓存看到其他缓存对自己 <strong>Exclusive</strong> 标记的块发出请求时，从本地缓存（而非主存）提供最新值，并将状态降级为 <strong>Shared</strong>。</p>
+  <div class="callout success">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body"><strong>效果</strong>：保证所有核看到的是内存的一致视图，防止读到旧值，实现顺序一致性。</div>
+  </div>
+</div>
+
+<!-- ⑧ 术语 -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-num">八</div>
+    <h2>关键术语速查</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>术语</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Multicore</strong></td><td>单芯片多核处理器，每个核独立执行</td></tr>
+        <tr><td><strong>Hyperthreading</strong></td><td>单核多线程，共享功能单元，复制寄存器堆</td></tr>
+        <tr><td><strong>False Sharing</strong></td><td>不同线程访问同一 cache line 的不同元素，引起不必要的缓存失效</td></tr>
+        <tr><td><strong>Amdahl's Law</strong></td><td>加速比上限由串行比例决定：S = 1/(s + (1-s)/p)</td></tr>
+        <tr><td><strong>Sequential Consistency</strong></td><td>所有线程操作可等效为某种全局顺序交织的一致性模型</td></tr>
+        <tr><td><strong>Snoopy Cache</strong></td><td>通过监听总线请求维护缓存一致性的协议（Invalid/Shared/Exclusive）</td></tr>
+        <tr><td><strong>Task Queue</strong></td><td>并行任务管理结构，用于动态分配和 join 线程任务</td></tr>
+        <tr><td><strong>Partition</strong></td><td>快速排序中将数组按枢轴划分为两部分的操作</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<footer>笔记整理自 CMU 15-213 CS:APP 第26讲 PPT &nbsp;·&nbsp; Thread-Level Parallelism</footer>
+
+</body>
+</html>

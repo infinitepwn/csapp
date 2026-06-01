@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第11讲：内存层次结构（The Memory Hierarchy）</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #bc8cff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --orange: #e3b341;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(160deg, #0d1b2a 0%, #112240 50%, #0d1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 52px 48px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; right: -80px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(88,166,255,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(88,166,255,0.12);
+      border: 1px solid rgba(88,166,255,0.3);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: 30px;
+      font-weight: 700;
+      color: #e6edf3;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .hero h1 em { color: var(--accent); font-style: normal; }
+    .hero-meta { color: var(--text-muted); font-size: 13px; }
+
+    /* ── 导航TOC ── */
+    .toc-wrap {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 48px;
+    }
+    .toc-inner {
+      display: flex;
+      gap: 6px 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .toc-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-right: 4px;
+    }
+    .toc-inner a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all .15s;
+    }
+    .toc-inner a:hover {
+      color: var(--accent);
+      border-color: var(--border);
+      background: var(--bg3);
+    }
+
+    /* ── 主体 ── */
+    .page { max-width: 980px; margin: 0 auto; padding: 0 48px 72px; }
+
+    .section { margin-top: 52px; }
+    .sec-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-num {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 30px; height: 30px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sec-header h2 { font-size: 21px; font-weight: 700; color: #e6edf3; }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 26px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3::before {
+      content: '';
+      display: inline-block;
+      width: 3px; height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    p { margin: 10px 0; }
+    ul, ol { padding-left: 22px; margin: 10px 0; }
+    li { margin: 6px 0; }
+
+    strong { color: var(--orange); }
+    em { color: var(--accent2); font-style: normal; font-weight: 500; }
+
+    /* ── 代码 ── */
+    pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 14px 0;
+      position: relative;
+    }
+    .lang-tag {
+      position: absolute;
+      top: 8px; right: 12px;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #adbac7;
+    }
+    p code, li code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 13px;
+      color: var(--green);
+    }
+    .kw { color: #f47067; }
+    .ty { color: #6cb6ff; }
+    .cm { color: #768390; font-style: italic; }
+    .num { color: #96d0ff; }
+    .fn { color: #dcbdfb; }
+    .var { color: #adbac7; }
+    .good { color: #57ab5a; }
+    .bad  { color: #f47067; }
+
+    /* ── 表格 ── */
+    .table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: var(--bg3); }
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(88,166,255,0.04); }
+
+    /* ── 提示块 ── */
+    .callout {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    .callout-icon { flex-shrink: 0; font-size: 17px; margin-top: 2px; }
+    .callout.info  { background: rgba(88,166,255,.07); border-left: 3px solid var(--accent); }
+    .callout.warn  { background: rgba(210,153,34,.07); border-left: 3px solid var(--yellow); }
+    .callout.ok    { background: rgba(63,185,80,.07);  border-left: 3px solid var(--green); }
+    .callout.danger{ background: rgba(248,81,73,.07);  border-left: 3px solid var(--red); }
+
+    /* ── 内存层次图 ── */
+    .hierarchy {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      margin: 16px 0;
+    }
+    .h-level {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 4px 0;
+    }
+    .h-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      width: 28px;
+      flex-shrink: 0;
+      font-family: monospace;
+    }
+    .h-bar-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .h-bar {
+      height: 38px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .h-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 10px;
+    }
+    .h-bar-l0 { width: 18%; background: linear-gradient(90deg,#1f6feb,#388bfd); }
+    .h-bar-l1 { width: 30%; background: linear-gradient(90deg,#1a7f37,#2ea043); }
+    .h-bar-l2 { width: 44%; background: linear-gradient(90deg,#9e6a03,#d29922); }
+    .h-bar-l3 { width: 58%; background: linear-gradient(90deg,#7d4e00,#b08000); }
+    .h-bar-l4 { width: 72%; background: linear-gradient(90deg,#ad2b2b,#cf222e); }
+    .h-bar-l5 { width: 86%; background: linear-gradient(90deg,#6e2389,#8957e5); }
+    .h-bar-l6 { width: 100%; background: linear-gradient(90deg,#424a53,#57606a); }
+    .h-arrow {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin: 2px 0 2px 28px;
+    }
+
+    /* ── 对比卡片 ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card ul { margin: 0; padding-left: 18px; }
+    .card li { font-size: 13.5px; margin: 5px 0; }
+
+    /* ── 性能数据栏 ── */
+    .perf-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .perf-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      flex: 1;
+      min-width: 140px;
+    }
+    .perf-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: monospace;
+    }
+    .perf-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── 公式块 ── */
+    .formula {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin: 14px 0;
+      font-family: monospace;
+      font-size: 14px;
+      color: #e6edf3;
+    }
+
+    /* ── 分隔 ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+    /* ── 页脚 ── */
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 28px 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .hero, .page { padding-left: 20px; padding-right: 20px; }
+      .toc-wrap { padding: 14px 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .h-bar-l0 { width: 28%; }
+      .h-bar-l2 { width: 48%; }
+      .h-bar-l4 { width: 75%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">CS:APP · 15-213 · Lecture 11</div>
+  <h1>第11讲：<em>内存层次结构</em><br>The Memory Hierarchy</h1>
+  <div class="hero-meta">Randal E. Bryant &amp; David R. O'Hallaron &nbsp;·&nbsp; CMU · Oct. 6, 2015 &nbsp;·&nbsp; 笔记整理</div>
+</div>
+
+<!-- TOC -->
+<div class="toc-wrap">
+  <div class="toc-inner">
+    <span class="toc-label">目录</span>
+    <a href="#s1">存储技术</a>
+    <a href="#s2">总线与内存读写</a>
+    <a href="#s3">磁盘</a>
+    <a href="#s4">SSD</a>
+    <a href="#s5">DRAM内部结构</a>
+    <a href="#s6">性能趋势</a>
+    <a href="#s7">局部性</a>
+    <a href="#s8">内存层次结构</a>
+    <a href="#s9">缓存概念</a>
+    <a href="#s10">缓存应用汇总</a>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- 一 -->
+<div class="section" id="s1">
+  <div class="sec-header">
+    <div class="sec-num">一</div>
+    <h2>存储技术（Storage Technologies）</h2>
+  </div>
+
+  <h3>1.1 RAM 的两种类型</h3>
+  <p>RAM（随机访问存储器）的基本存储单元是<strong>一位的 cell</strong>，多片 RAM 芯片组成内存。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>类型</th><th>晶体管/位</th><th>访问速度</th><th>需要刷新</th><th>ECC</th><th>成本</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SRAM</strong>（静态）</td>
+          <td>4 或 6</td>
+          <td>1× <em>（基准）</em></td>
+          <td>❌ 不需要</td>
+          <td>可选</td>
+          <td>~100×</td>
+          <td>Cache 缓存</td>
+        </tr>
+        <tr>
+          <td><strong>DRAM</strong>（动态）</td>
+          <td>1</td>
+          <td>10×</td>
+          <td>✅ 需要</td>
+          <td>需要</td>
+          <td>1×</td>
+          <td>主存、帧缓冲</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">💡</div>
+    <div>SRAM 访问速度快、无需刷新，但面积大、成本高，适合做 Cache。DRAM 密度大、成本低，但需要定期刷新，适合做主存。</div>
+  </div>
+
+  <h3>1.2 非易失性存储（Nonvolatile Memory）</h3>
+  <p>DRAM 和 SRAM 都是<strong>易失性（Volatile）</strong>存储器，断电后数据丢失。非易失性存储器断电后可保留数据：</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>类型</th><th>特点</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ROM</strong></td><td>生产时编程，只读</td></tr>
+        <tr><td><strong>PROM</strong></td><td>可编程一次（Programmable ROM）</td></tr>
+        <tr><td><strong>EPROM</strong></td><td>可用紫外线/X射线批量擦除</td></tr>
+        <tr><td><strong>EEPROM</strong></td><td>可电擦除</td></tr>
+        <tr><td><strong>Flash Memory</strong></td><td>EEPROM 的块级擦除版本，约 <strong>10万次</strong>写后损耗</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>应用</strong>：固件（BIOS、设备控制器）、SSD、磁盘缓存等。</p>
+
+  <h3>1.3 增强型 DRAM</h3>
+  <ul>
+    <li><strong>SDRAM（同步DRAM）</strong>：使用时钟信号代替异步控制，可复用行地址（RAS, CAS, CAS, CAS…）</li>
+    <li><strong>DDR SDRAM</strong>：双边沿时钟，每个时钟周期每个引脚传输 2 位
+      <ul>
+        <li>DDR：预取缓冲 2 位</li>
+        <li>DDR2：预取缓冲 4 位</li>
+        <li>DDR3：预取缓冲 8 位（Intel Core i7 标准）</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<!-- 二 -->
+<div class="section" id="s2">
+  <div class="sec-header">
+    <div class="sec-num">二</div>
+    <h2>总线结构与内存读写事务</h2>
+  </div>
+
+  <h3>2.1 总线结构</h3>
+  <p>总线（Bus）是一组传输地址、数据和控制信号的并行导线，通常由多个设备共享。</p>
+  <pre><code>
+  CPU chip
+  ┌──────────────┐
+  │ Register file│
+  │     ALU      │──── System Bus ──── I/O bridge ──── Memory Bus ──── Main Memory
+  │ Bus interface│
+  └──────────────┘
+                              │
+                           I/O Bus
+                    ┌────────┴────────────────┐
+               USB ctrl    Graphics adapter    Disk controller
+                  │              │                   │
+              Mouse/KB        Monitor              Disk
+  </code></pre>
+
+  <h3>2.2 内存读事务（Load 操作）</h3>
+  <p>以 <code>movq A, %rax</code> 为例，分三步完成：</p>
+  <ol>
+    <li><strong>Step 1</strong>：CPU 将地址 A 放到内存总线上</li>
+    <li><strong>Step 2</strong>：主存从总线读取地址 A，取出 word x，放回总线</li>
+    <li><strong>Step 3</strong>：CPU 从总线读取 word x，写入寄存器 <code>%rax</code></li>
+  </ol>
+
+  <h3>2.3 读取磁盘扇区（DMA）</h3>
+  <ol>
+    <li>CPU 向磁盘控制器端口写入：命令 + 逻辑块号 + 目标内存地址</li>
+    <li>磁盘控制器读取扇区，通过 <strong>DMA（直接内存访问）</strong> 将数据传输到主存，CPU 此时可做其他事</li>
+    <li>DMA 完成后，磁盘控制器向 CPU 发送<strong>中断（Interrupt）</strong>，通知传输完成</li>
+  </ol>
+</div>
+
+<!-- 三 -->
+<div class="section" id="s3">
+  <div class="sec-header">
+    <div class="sec-num">三</div>
+    <h2>机械磁盘（Rotating Disk）</h2>
+  </div>
+
+  <h3>3.1 磁盘结构</h3>
+  <ul>
+    <li><strong>盘片（Platter）</strong>：磁性涂层的圆盘，两面均可存储</li>
+    <li><strong>磁道（Track）</strong>：盘面上的同心圆</li>
+    <li><strong>扇区（Sector）</strong>：磁道被划分成扇形区域，是读写的最小单位（通常 512 B）</li>
+    <li><strong>柱面（Cylinder）</strong>：所有盘片上相同磁道号的集合</li>
+    <li><strong>记录区（Recording Zone）</strong>：外圈磁道更长，扇区数更多；计算容量时用平均扇区数</li>
+  </ul>
+
+  <h3>3.2 磁盘容量计算</h3>
+  <div class="formula">
+容量 = (字节/扇区) × (平均扇区/磁道) × (磁道/面) × (面/盘片) × (盘片/磁盘)
+
+示例：512 B/sector × 300 sector/track × 20,000 tracks × 2 surfaces × 5 platters
+     = 30,720,000,000 B ≈ 30.72 GB
+  </div>
+
+  <h3>3.3 磁盘访问时间</h3>
+  <div class="formula">
+T_access = T_seek + T_rotation + T_transfer
+  </div>
+
+  <div class="perf-row">
+    <div class="perf-item">
+      <div class="perf-val">3~9 ms</div>
+      <div class="perf-label">T_seek（寻道时间）<br>磁头移动到目标磁道</div>
+    </div>
+    <div class="perf-item">
+      <div class="perf-val">~4 ms</div>
+      <div class="perf-label">T_rotation（旋转延迟）<br>等待目标扇区转到磁头下方<br>= 1/2 × (1/RPM) × 60s</div>
+    </div>
+    <div class="perf-item">
+      <div class="perf-val">~0.02 ms</div>
+      <div class="perf-label">T_transfer（传输时间）<br>读取扇区所有位</div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>
+      <strong>关键结论</strong>：访问时间主要由寻道时间和旋转延迟决定，传输时间几乎可忽略。<br>
+      扇区<strong>第一个位</strong>代价最贵，其余位几乎免费。<br>
+      磁盘比 SRAM 慢约 <strong>40,000 倍</strong>，比 DRAM 慢约 <strong>2,500 倍</strong>。
+    </div>
+  </div>
+
+  <h3>3.4 逻辑磁盘块</h3>
+  <p>现代磁盘将复杂的物理几何结构抽象为：连续的<strong>逻辑块序列 (0, 1, 2, ...)</strong></p>
+  <p>由<strong>磁盘控制器（Disk Controller）</strong>维护逻辑块到物理扇区（surface, track, sector）的映射，并负责坏道管理等。这也是"格式化容量"与"最大容量"不同的原因。</p>
+</div>
+
+<!-- 四 -->
+<div class="section" id="s4">
+  <div class="sec-header">
+    <div class="sec-num">四</div>
+    <h2>固态硬盘（SSD）</h2>
+  </div>
+
+  <h3>4.1 SSD 结构</h3>
+  <ul>
+    <li>由 <strong>Flash 闪存</strong> + <strong>Flash Translation Layer（FTL）</strong> 组成</li>
+    <li>Flash 组织为：Block（32~128 Pages）→ Page（512B ~ 4KB）</li>
+    <li>数据以 <strong>Page 为单位</strong>读写，但擦除以 <strong>Block 为单位</strong></li>
+    <li>写入 Page 前必须先擦除整个 Block，一个 Block 约磨损 <strong>10 万次</strong>后报废</li>
+  </ul>
+
+  <h3>4.2 SSD 性能（Intel SSD 730）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>指标</th><th>顺序</th><th>随机</th></tr></thead>
+      <tbody>
+        <tr><td><strong>读吞吐量</strong></td><td>550 MB/s</td><td>365 MB/s</td></tr>
+        <tr><td><strong>写吞吐量</strong></td><td>470 MB/s</td><td>303 MB/s</td></tr>
+        <tr><td><strong>平均延迟</strong></td><td>50 µs (读) / 60 µs (写)</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>顺序访问明显快于随机访问（内存层次结构的普遍规律）；随机写较慢（需先擦除整块 ~1ms）。</p>
+
+  <h3>4.3 SSD vs 机械硬盘</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">✅ SSD 优势</div>
+      <ul>
+        <li>无机械部件 → 更快、更省电、更耐摔</li>
+        <li>随机读性能远超 HDD</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--red)">⚠️ SSD 劣势</div>
+      <ul>
+        <li>有写入寿命（通过 Wear Leveling 缓解）</li>
+        <li>2015年成本约为 HDD 的 30 倍/字节</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 五 -->
+<div class="section" id="s5">
+  <div class="sec-header">
+    <div class="sec-num">五</div>
+    <h2>DRAM 内部读取原理</h2>
+  </div>
+
+  <h3>5.1 DRAM 组织方式</h3>
+  <p><code>d × w</code> DRAM：共 <code>dw</code> 位，组织为 <code>d</code> 个 supercell，每个 supercell 为 <code>w</code> 位。</p>
+  <p>例：16 × 8 DRAM = 4行 × 4列，每格 8 位（1字节）。</p>
+
+  <h3>5.2 读取 Supercell(2,1) 的过程</h3>
+  <ol>
+    <li><strong>RAS（行地址选通）</strong>：发送行号 2 → 将第2行复制到 row buffer</li>
+    <li><strong>CAS（列地址选通）</strong>：发送列号 1 → 从 row buffer 取出 supercell(2,1) → 发送给 CPU</li>
+  </ol>
+
+  <h3>5.3 内存模块（Memory Module）</h3>
+  <p>64 MB 内存模块由 <strong>8 片 8M×8 DRAM</strong> 组成，每片提供 8 位，合并输出 <strong>64 位宽</strong>的数据字。</p>
+</div>
+
+<!-- 六 -->
+<div class="section" id="s6">
+  <div class="sec-header">
+    <div class="sec-num">六</div>
+    <h2>性能趋势与 CPU-Memory Gap</h2>
+  </div>
+
+  <h3>6.1 存储器成本与速度趋势（1985-2015）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>类型</th><th>指标</th><th>1985</th><th>2000</th><th>2015</th><th>变化倍数</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="2"><strong>SRAM</strong></td><td>$/MB</td><td>$2,900</td><td>$100</td><td>$320</td><td>~9×↓ (后期回升)</td></tr>
+        <tr><td>访问时间</td><td>150 ns</td><td>3 ns</td><td>1.3 ns</td><td>~115× 提速</td></tr>
+        <tr><td rowspan="2"><strong>DRAM</strong></td><td>$/MB</td><td>$880</td><td>$1</td><td>$0.02</td><td>44,000× 降价</td></tr>
+        <tr><td>访问时间</td><td>200 ns</td><td>60 ns</td><td>20 ns</td><td>10× 提速</td></tr>
+        <tr><td rowspan="2"><strong>磁盘</strong></td><td>$/GB</td><td>$100,000</td><td>$10</td><td>$0.03</td><td>3,333,333× 降价</td></tr>
+        <tr><td>容量</td><td>0.01 GB</td><td>20 GB</td><td>3,000 GB</td><td>300,000× 增长</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>6.2 CPU 时钟频率趋势</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>年份</th><th>CPU</th><th>时钟频率</th><th>有效周期（考虑多核）</th></tr></thead>
+      <tbody>
+        <tr><td>1985</td><td>80286</td><td>6 MHz（166 ns/周期）</td><td>166 ns</td></tr>
+        <tr><td>1995</td><td>Pentium</td><td>150 MHz（6 ns）</td><td>6 ns</td></tr>
+        <tr><td>2003</td><td>Pentium 4</td><td>3,300 MHz（0.30 ns）</td><td>0.30 ns</td></tr>
+        <tr><td>2010</td><td>Core i7 (Nehalem)</td><td>2,500 MHz（0.4 ns）</td><td>0.10 ns（4核）</td></tr>
+        <tr><td>2015</td><td>Core i7 (Haswell)</td><td>3,000 MHz（0.33 ns）</td><td>0.08 ns（4核）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger">
+    <div class="callout-icon">⚡</div>
+    <div>
+      <strong>CPU-Memory Gap 持续扩大</strong>：CPU 速度提升约 2000×，DRAM 访问速度仅提升约 10×，磁盘访问延迟几乎没变。<br>
+      架起这道鸿沟的桥梁，正是<strong>内存层次结构（Memory Hierarchy）</strong> 和<strong>缓存（Cache）</strong>。
+    </div>
+  </div>
+</div>
+
+<!-- 七 -->
+<div class="section" id="s7">
+  <div class="sec-header">
+    <div class="sec-num">七</div>
+    <h2>局部性原理（Locality）</h2>
+  </div>
+
+  <p>局部性是程序天然具备的性质，也是内存层次结构能够工作的根本原因。</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title" style="color:var(--accent)">时间局部性（Temporal Locality）</div>
+      <ul>
+        <li>最近被访问过的数据/指令，<strong>近期很可能再次被访问</strong></li>
+        <li>例：循环变量 <code>sum</code> 每次迭代都被读写</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--accent2)">空间局部性（Spatial Locality）</div>
+      <ul>
+        <li>最近访问的地址附近的数据，<strong>近期也可能被访问</strong></li>
+        <li>例：顺序遍历数组 <code>a[i]</code>，每次地址 +4 字节</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>7.1 局部性分析示例</h3>
+  <pre><span class="lang-tag">C</span><code><span class="cm">// 基础示例</span>
+<span class="ty">int</span> sum = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="ty">int</span> i = <span class="num">0</span>; i &lt; n; i++)
+    sum += a[i];   <span class="cm">// a[i]：步长-1 访问 → ✅ 空间局部性</span>
+                   <span class="cm">// sum：每次迭代访问 → ✅ 时间局部性</span>
+<span class="kw">return</span> sum;</code></pre>
+
+  <h3>7.2 二维数组的访问顺序</h3>
+
+  <pre><span class="lang-tag">C（行优先访问 — 好）</span><code><span class="cm">// C 语言中二维数组按行存储（row-major order）</span>
+<span class="cm">// 按行遍历：a[0][0], a[0][1], ..., a[0][N-1], a[1][0], ...</span>
+<span class="cm">// 每次访问相邻内存地址 → ✅ 优秀的空间局部性</span>
+<span class="kw">for</span> (i = <span class="num">0</span>; i &lt; M; i++)
+    <span class="kw">for</span> (j = <span class="num">0</span>; j &lt; N; j++)
+        sum += a[i][j];  <span class="good">// ✅ stride-1，好</span></code></pre>
+
+  <pre><span class="lang-tag">C（列优先访问 — 差）</span><code><span class="cm">// 按列遍历：a[0][0], a[1][0], a[2][0], ...（每次跳 N 个元素）</span>
+<span class="cm">// 步长为 N，每次访问跨越整行 → ❌ 空间局部性差</span>
+<span class="kw">for</span> (j = <span class="num">0</span>; j &lt; N; j++)
+    <span class="kw">for</span> (i = <span class="num">0</span>; i &lt; M; i++)
+        sum += a[i][j];  <span class="bad">// ❌ stride-N，差</span></code></pre>
+
+  <div class="callout ok">
+    <div class="callout-icon">🎯</div>
+    <div><strong>程序员技能</strong>：能够看着代码就判断局部性好坏，是专业程序员的核心能力之一。</div>
+  </div>
+</div>
+
+<!-- 八 -->
+<div class="section" id="s8">
+  <div class="sec-header">
+    <div class="sec-num">八</div>
+    <h2>内存层次结构（Memory Hierarchy）</h2>
+  </div>
+
+  <h3>8.1 三大基本性质</h3>
+  <ol>
+    <li><strong>快速存储器</strong>：成本高、容量小、功耗大</li>
+    <li><strong>CPU 与内存的速度差距</strong>持续扩大</li>
+    <li><strong>优秀程序</strong>天然具有良好的局部性</li>
+  </ol>
+  <p>这三条性质完美互补，共同催生了内存层次结构。</p>
+
+  <h3>8.2 典型内存层次</h3>
+  <div class="hierarchy">
+    <div class="h-level">
+      <div class="h-label">L0</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l0">寄存器（Registers）<span class="h-desc">~0 cycles · &lt;1 KB</span></div></div>
+    </div>
+    <div class="h-arrow">↕ CPU 寄存器保存从 L1 Cache 取来的数据</div>
+    <div class="h-level">
+      <div class="h-label">L1</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l1">L1 Cache (SRAM)<span class="h-desc">~4 cycles · ~32 KB</span></div></div>
+    </div>
+    <div class="h-arrow">↕ L1 Cache 保存从 L2 取来的缓存行</div>
+    <div class="h-level">
+      <div class="h-label">L2</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l2">L2 Cache (SRAM)<span class="h-desc">~10 cycles · ~256 KB</span></div></div>
+    </div>
+    <div class="h-arrow">↕ L2 Cache 保存从 L3 取来的缓存行</div>
+    <div class="h-level">
+      <div class="h-label">L3</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l3">L3 Cache (SRAM)<span class="h-desc">~30-50 cycles · ~8 MB</span></div></div>
+    </div>
+    <div class="h-arrow">↕ L3 Cache 保存从主存取来的缓存行</div>
+    <div class="h-level">
+      <div class="h-label">L4</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l4">主存 Main Memory (DRAM)<span class="h-desc">~100 cycles · ~GB级</span></div></div>
+    </div>
+    <div class="h-arrow">↕ 主存保存从本地磁盘取来的磁盘块</div>
+    <div class="h-level">
+      <div class="h-label">L5</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l5">本地磁盘 Local Disk<span class="h-desc">~10M cycles · ~TB级</span></div></div>
+    </div>
+    <div class="h-arrow">↕ 本地磁盘保存从远程服务器取来的文件</div>
+    <div class="h-level">
+      <div class="h-label">L6</div>
+      <div class="h-bar-wrap"><div class="h-bar h-bar-l6">远程存储 Remote Storage<span class="h-desc">网络延迟 · 无限容量</span></div></div>
+    </div>
+  </div>
+
+  <h3>8.3 大思想（The Big Idea）</h3>
+  <div class="callout info">
+    <div class="callout-icon">🌟</div>
+    <div>
+      <strong>内存层次结构</strong>创造了一个大容量的存储池，其<strong>成本接近底层廉价存储器</strong>，但<strong>向程序提供数据的速度接近顶层快速存储器</strong>。<br><br>
+      这依赖于局部性：由于程序总是倾向于重复访问相同数据（时间局部性）和访问相邻数据（空间局部性），慢速大容量存储器很少成为瓶颈。
+    </div>
+  </div>
+</div>
+
+<!-- 九 -->
+<div class="section" id="s9">
+  <div class="sec-header">
+    <div class="sec-num">九</div>
+    <h2>通用缓存概念（General Cache Concepts）</h2>
+  </div>
+
+  <p><strong>缓存（Cache）</strong>：一个更小、更快的存储设备，作为更大、更慢的存储设备中部分数据的"暂存区"。</p>
+  <p>在内存层次的每一层 k，第 k 层的快速设备都充当第 k+1 层的缓存。</p>
+
+  <h3>9.1 缓存命中（Hit）</h3>
+  <p>程序需要第 k+1 层中 block b 的数据，而 block b 已经在第 k 层缓存中，直接返回。</p>
+
+  <h3>9.2 缓存缺失（Miss）</h3>
+  <p>程序需要 block b，但它不在缓存中。触发以下步骤：</p>
+  <ol>
+    <li>从第 k+1 层取出 block b（费时！）</li>
+    <li>将 block b 存入缓存（<strong>放置策略</strong> Placement Policy 决定放哪里）</li>
+    <li>如果缓存已满，需要驱逐某个 block（<strong>替换策略</strong> Replacement Policy 决定驱逐谁）</li>
+  </ol>
+
+  <h3>9.3 三类缓存缺失</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>类型</th><th>原因</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>冷缺失（Cold Miss）</strong><br>也叫强制缺失</td>
+          <td>缓存为空</td>
+          <td>第一次访问，缓存中什么都没有，不可避免</td>
+        </tr>
+        <tr>
+          <td><strong>冲突缺失（Conflict Miss）</strong></td>
+          <td>多个 block 映射到缓存同一位置</td>
+          <td>
+            缓存容量够大，但映射规则导致冲突<br>
+            例：block i 必须放在 <code>i mod 4</code> 号槽位，若反复访问 block 0 和 8，每次都会 miss
+          </td>
+        </tr>
+        <tr>
+          <td><strong>容量缺失（Capacity Miss）</strong></td>
+          <td>工作集（Working Set）超过缓存容量</td>
+          <td>程序活跃使用的数据量大于缓存大小</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 十 -->
+<div class="section" id="s10">
+  <div class="sec-header">
+    <div class="sec-num">十</div>
+    <h2>缓存在内存层次中的全景</h2>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>缓存类型</th><th>缓存什么</th><th>缓存在哪里</th><th>延迟（cycles）</th><th>管理者</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>寄存器</strong></td><td>4-8 字节 word</td><td>CPU 核心</td><td>0</td><td>编译器</td></tr>
+        <tr><td><strong>TLB</strong></td><td>地址转换</td><td>片上 TLB</td><td>0</td><td>硬件 MMU</td></tr>
+        <tr><td><strong>L1 Cache</strong></td><td>64 字节块</td><td>片上 L1</td><td>4</td><td>硬件</td></tr>
+        <tr><td><strong>L2 Cache</strong></td><td>64 字节块</td><td>片上 L2</td><td>10</td><td>硬件</td></tr>
+        <tr><td><strong>虚拟内存</strong></td><td>4 KB 页面</td><td>主内存</td><td>100</td><td>硬件 + OS</td></tr>
+        <tr><td><strong>Buffer Cache</strong></td><td>文件内容</td><td>主内存</td><td>100</td><td>OS</td></tr>
+        <tr><td><strong>磁盘缓存</strong></td><td>磁盘扇区</td><td>磁盘控制器</td><td>100,000</td><td>磁盘固件</td></tr>
+        <tr><td><strong>网络缓冲缓存</strong></td><td>文件内容</td><td>本地磁盘</td><td>10,000,000</td><td>NFS 客户端</td></tr>
+        <tr><td><strong>浏览器缓存</strong></td><td>Web 页面</td><td>本地磁盘</td><td>10,000,000</td><td>Web 浏览器</td></tr>
+        <tr><td><strong>Web 缓存</strong></td><td>Web 页面</td><td>远程服务器磁盘</td><td>1,000,000,000</td><td>Web 代理</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout ok">
+    <div class="callout-icon">🔑</div>
+    <div>缓存的思想无处不在——从 CPU 寄存器到 Web CDN，都是同一个道理：用更快的小存储器缓存更慢的大存储器中的热点数据。</div>
+  </div>
+
+  <hr>
+
+  <h3>本讲小结</h3>
+  <ul>
+    <li>CPU、内存、外存之间的<strong>速度鸿沟持续扩大</strong></li>
+    <li>优秀程序天然具备<strong>局部性（时间局部性 + 空间局部性）</strong></li>
+    <li>内存层次结构利用局部性，通过<strong>缓存</strong>弥补速度差距</li>
+    <li>缓存缺失分三类：<strong>冷缺失、冲突缺失、容量缺失</strong></li>
+    <li>编写<strong>缓存友好的代码</strong>（如按行访问二维数组）是性能优化的关键</li>
+  </ul>
+</div>
+
+</div><!-- /page -->
+
+<footer>笔记整理自 CMU 15-213 CS:APP 第11讲 PPT &nbsp;·&nbsp; The Memory Hierarchy</footer>
+
+</body>
+</html>

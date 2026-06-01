@@ -1,0 +1,204 @@
+{
+  "main": {
+    "id": "edfd4bb417aa07af",
+    "type": "split",
+    "children": [
+      {
+        "id": "5904e7b55ba990bb",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7607e49e8818d113",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "virtual_memory.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "virtual_memory"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7810476cf0286e4d",
+    "type": "split",
+    "children": [
+      {
+        "id": "bd84a04f727ccb09",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "07f10549bad36486",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "ca3fcf0e301c1292",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "1d1c622712f87251",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "0727cb1b48fe7dbf",
+    "type": "split",
+    "children": [
+      {
+        "id": "eba7a8bb0048c02a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a6a69bdef4367095",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "virtual_memory.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "virtual_memory 的反向链接列表"
+            }
+          },
+          {
+            "id": "abbc2d3ee80b0cd3",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "virtual_memory.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "virtual_memory 的出链列表"
+            }
+          },
+          {
+            "id": "76b5abcab401294d",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "44fb6649e1a9a8da",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "f34b102f0c12bf49",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "virtual_memory.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "virtual_memory 的大纲"
+            }
+          },
+          {
+            "id": "47d2e2d7a3f38753",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
+          }
+        ],
+        "currentTab": 5
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "07f10549bad36486",
+  "lastOpenFiles": [
+    "Computer Systems A Programmers Perspective (3rd).pdf",
+    "深入理解计算机系统（中文清晰）.pdf",
+    "virtual_memory.md",
+    "26-parallelism笔记.md"
+  ]
+}
