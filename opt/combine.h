@@ -51,7 +51,7 @@ typedef char data_t;
 #endif /* DIV */
 #endif /* PROD */
 
-#ifndef data_t
+#if !defined(FLOAT) && !defined(DOUBLE) && !defined(EXTEND) && !defined(INT) && !defined(LONG) && !defined(CHAR)
 typedef int data_t;
 #define DATA_NAME "Default Int"
 #endif
@@ -65,6 +65,7 @@ typedef void (*combiner)(vec_ptr, data_t *);
 /* Combine functions */
 void combine1(vec_ptr v, data_t *dest);
 void combine2(vec_ptr v, data_t *dest);
+void combine3(vec_ptr v, data_t *dest);
 
 /* Add combining routine to list of programs to measure */
 void add_combiner(combiner f, combiner fc, char *description);
@@ -75,4 +76,3 @@ void log_combiner(combiner f, double fast_cpe, double slow_cpe);
 
 /* Called by main to register the set of transposition routines to benchmark */
 void register_combiners(void);
-

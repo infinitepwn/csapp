@@ -1,7 +1,7 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "combine.h"
-#define OP +
-#define IDENT 0
+#include <time.h>
 /* $begin vec */
 /* Create vector of specified length */
 vec_ptr new_vec(long len)
@@ -102,9 +102,43 @@ void combine2(vec_ptr v, data_t *dest)
     long i;
     long length = vec_length(v);
     *dest = IDENT;
-    for (i = 0; i < vec_length(v); i++){
+    for (i = 0; i < length; i++){
         data_t val;
         get_vec_element(v, i, &val);
         *dest = *dest OP val; 
     }
 }
+void combine3(vec_ptr v, data_t *dest)
+{
+    long i;
+    long length = vec_length(v);
+    data_t *data = get_vec_start(v);
+    *dest = IDENT;
+    for (i = 0; i < length; i++){
+        *dest = *dest OP data[i]; 
+    }
+}
+#ifdef VEC_STANDALONE
+int main()
+{
+    vec_ptr v = new_vec(1000000000);
+    for (long i = 0; i < 1000000000; i++)
+        set_vec_element(v, i, i);
+    data_t result1, result2;
+    clock_t start, end;
+    start = clock();
+    combine1(v, &result1);
+    end = clock();
+    printf("combine1 time: %f seconds\n", ((double)(end - start)) / CLOCKS_PER_SEC);
+    start = clock();
+    combine2(v, &result2);
+    end = clock();
+    printf("combine2 time: %f seconds\n", ((double)(end - start)) / CLOCKS_PER_SEC);    
+    start = clock();
+    combine3(v, &result1);
+    end = clock();
+    printf("combine3 time: %f seconds\n", ((double)(end - start)) / CLOCKS_PER_SEC);
+    free_vec(v);
+    return 0;
+}
+#endif

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "虚拟内存/virtual_memory.md",
+                "file": "优化程序性能/现代处理器.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "virtual_memory"
+              "title": "现代处理器"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "虚拟内存/virtual_memory.md",
+                "file": "虚拟内存/内碎片.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "virtual_memory 的反向链接列表"
+              "title": "内碎片 的反向链接列表"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "虚拟内存/virtual_memory.md",
+                "file": "虚拟内存/内碎片.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "virtual_memory 的出链列表"
+              "title": "内碎片 的出链列表"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "虚拟内存/virtual_memory.md",
+                "file": "虚拟内存/内碎片.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "virtual_memory 的大纲"
+              "title": "内碎片 的大纲"
             }
           },
           {
@@ -180,7 +180,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -194,14 +194,41 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "07f10549bad36486",
+  "active": "7607e49e8818d113",
   "lastOpenFiles": [
-    "虚拟内存",
-    "课本/深入理解计算机系统（中文清晰）.pdf",
+    "优化程序性能/分支预测.md",
+    "优化程序性能/现代处理器.md",
+    "优化程序性能/循环展开.md",
+    "优化程序性能/优化编译器的能力和局限性.md",
+    "计算机系统漫游/编译器.md",
+    "计算机系统漫游/运行程序的过程.md",
+    "计算机系统漫游/计算机系统漫游.md",
+    "虚拟内存/动态内存分配.md",
+    "虚拟内存/内碎片.md",
+    "虚拟内存/外碎片.md",
+    "虚拟内存/物理地址和虚拟地址.md",
+    "虚拟内存/虚拟内存.md",
+    "优化程序性能/减少过程调用.md",
+    "index.md",
     "README.md",
-    "课本",
-    "虚拟内存/virtual_memory.md",
-    "课本/Computer Systems A Programmers Perspective (3rd).pdf",
-    "26-parallelism笔记.md"
+    "opt/combine_cpe_experiment.md",
+    "优化程序性能/消除循环的低效率.md",
+    "优化程序性能/消除不必要的内存引用.md",
+    "opt/combine_cpe.svg",
+    "opt/__pycache__/measure_combine_cpe.cpython-314.pyc",
+    "opt/__pycache__",
+    "opt/combine_cpe.csv",
+    "opt/build/libvec.dylib",
+    "opt/build",
+    "opt/measure_combine_cpe.py",
+    "opt/vec",
+    "并行/26-parallelism笔记.md",
+    "存储器层次结构",
+    "未命名.md",
+    "opt/twiddle",
+    "opt/twiddle.c",
+    "Has Machine Learning for System Reached an Infection Point？.md",
+    "虚拟内存/Explicit Free Lists.md",
+    "虚拟内存/动态内存分配~.md"
   ]
 }
